@@ -1,6 +1,11 @@
 import axios from 'axios';
 
 function resolveApiBaseUrl() {
+  const configured = process.env.REACT_APP_API_BASE_URL;
+  if (configured) {
+    return configured.replace(/\/$/, '');
+  }
+
   if (typeof window === 'undefined') {
     return 'http://127.0.0.1:5000';
   }
