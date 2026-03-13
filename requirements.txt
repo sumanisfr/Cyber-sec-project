@@ -1,0 +1,13 @@
+Flask
+flask-cors
+flask-jwt-extended
+flask-limiter
+flask-wtf
+python-dotenv
+psycopg2-binary
+bcrypt
+python-magic-bin
+requests
+beautifulsoup4
+validators
+APScheduler
