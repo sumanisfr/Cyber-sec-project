@@ -76,4 +76,17 @@ if __name__ == '__main__':
         init_db()
         print('Initialized the database.')
 
-    app.run(debug=True)
+    host = os.getenv('HOST', '0.0.0.0')
+    port = int(os.getenv('PORT', '5000'))
+    debug = os.getenv('FLASK_DEBUG', 'false').lower() in ('1', 'true', 'yes')
+    use_waitress = os.getenv('FLASK_USE_WAITRESS', 'true').lower() in ('1', 'true', 'yes')
+
+    if use_waitress:
+        try:
+            from waitress import serve
+
+            serve(app, host=host, port=port)
+        except Exception:
+            app.run(host=host, port=port, debug=debug)
+    else:
+        app.run(host=host, port=port, debug=debug)

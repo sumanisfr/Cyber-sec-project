@@ -1,7 +1,11 @@
-from flask import Blueprint, jsonify
+import json
+from queue import Empty
+
+from flask import Blueprint, jsonify, Response, stream_with_context
 from flask_jwt_extended import get_jwt, verify_jwt_in_request
 
 from database import execute
+from realtime import publish_dashboard_update, subscribe, unsubscribe
 
 stats_bp = Blueprint('stats', __name__)
 
@@ -56,3 +60,28 @@ def summary():
         'job_scam_checks': job_scam_checks['cnt'] if job_scam_checks and 'cnt' in job_scam_checks else 0,
         'fraud_detected': fraud_detected['cnt'] if fraud_detected and 'cnt' in fraud_detected else 0,
     })
+
+
+@stats_bp.route('/stream', methods=['GET'])
+def stream():
+    """Stream dashboard update signals as server-sent events."""
+
+    def event_stream():
+        queue = subscribe()
+        try:
+            yield 'event: ready\ndata: {"status":"connected"}\n\n'
+            while True:
+                try:
+                    message = queue.get(timeout=25)
+                    yield f'event: stats-updated\ndata: {json.dumps(message)}\n\n'
+                except Empty:
+                    yield ': keep-alive\n\n'
+        finally:
+            unsubscribe(queue)
+
+    headers = {
+        'Cache-Control': 'no-cache',
+        'Content-Type': 'text/event-stream',
+        'X-Accel-Buffering': 'no',
+    }
+    return Response(stream_with_context(event_stream()), headers=headers)

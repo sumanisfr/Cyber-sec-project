@@ -4,6 +4,7 @@ from flask_jwt_extended import get_jwt, verify_jwt_in_request
 from database import execute
 from extensions import csrf
 from job_scam_analyzer import analyze_job_text
+from realtime import publish_dashboard_update
 
 job_scam_bp = Blueprint('job_scam', __name__)
 
@@ -37,4 +38,5 @@ def check_job_post():
         return_lastrowid=True,
     )
     analysis['check_id'] = check_id
+    publish_dashboard_update({'type': 'job-scam-check-complete', 'tenant_id': tenant_id})
     return jsonify(analysis)

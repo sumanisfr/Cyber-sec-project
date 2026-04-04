@@ -6,6 +6,7 @@ from flask_jwt_extended import jwt_required, get_jwt
 from database import execute
 from scanner.vuln_scan import run_scan
 from extensions import csrf
+from realtime import publish_dashboard_update
 
 vuln_bp = Blueprint('vuln', __name__)
 
@@ -31,6 +32,8 @@ def scan_website():
         (tenant_id, username, url, json.dumps(report)),
         commit=True,
     )
+
+    publish_dashboard_update({'type': 'vuln-scan-complete', 'tenant_id': tenant_id})
 
     return jsonify(report)
 

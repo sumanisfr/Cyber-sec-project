@@ -9,7 +9,7 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
-import axios from './api';
+import axios, { API_BASE_URL } from './api';
 import { DASHBOARD_REFRESH_EVENT } from './dashboardEvents';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
@@ -29,6 +29,7 @@ function Dashboard() {
 
   useEffect(() => {
     let cancelled = false;
+    let eventSource;
 
     const fetchStats = async ({ silent = false } = {}) => {
       try {
@@ -52,14 +53,28 @@ function Dashboard() {
 
     fetchStats();
 
+    if (typeof window !== 'undefined' && typeof window.EventSource !== 'undefined') {
+      eventSource = new window.EventSource(`${API_BASE_URL}/api/stats/stream`);
+      eventSource.addEventListener('stats-updated', () => fetchStats({ silent: true }));
+      eventSource.addEventListener('ready', () => setLoading(false));
+      eventSource.onerror = () => {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      };
+    }
+
     const handleRefresh = () => fetchStats({ silent: true });
     window.addEventListener(DASHBOARD_REFRESH_EVENT, handleRefresh);
-    const timer = window.setInterval(handleRefresh, 5000);
+    const timer = window.setInterval(handleRefresh, 30000);
 
     return () => {
       cancelled = true;
       window.removeEventListener(DASHBOARD_REFRESH_EVENT, handleRefresh);
       window.clearInterval(timer);
+      if (eventSource) {
+        eventSource.close();
+      }
     };
   }, []);
 
