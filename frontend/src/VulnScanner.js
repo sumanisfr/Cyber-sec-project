@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from './api';
 import { useAuth } from './AuthContext';
+import { notifyDashboardRefresh } from './dashboardEvents';
 
 function VulnScanner() {
   const { token } = useAuth();
@@ -45,6 +46,7 @@ function VulnScanner() {
       const res = await axios.post('/api/vuln/scan', { url });
       setReport(res.data);
       fetchHistory();
+      notifyDashboardRefresh();
     } catch (err) {
       setError(err.response?.data?.error || 'Scan failed.');
     } finally {

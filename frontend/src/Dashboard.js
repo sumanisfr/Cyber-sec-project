@@ -10,34 +10,65 @@ import {
   Legend,
 } from 'chart.js';
 import axios from './api';
+import { DASHBOARD_REFRESH_EVENT } from './dashboardEvents';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
+const defaultStats = {
+  total_activity: 0,
+  total_scans: 0,
+  malware_detected: 0,
+  vulnerability_reports: 0,
+  job_scam_checks: 0,
+  fraud_detected: 0,
+};
+
 function Dashboard() {
-  const [stats, setStats] = useState({
-    total_scans: 0,
-    malware_detected: 0,
-    vulnerability_reports: 0,
-    fraud_detected: 0,
-  });
+  const [stats, setStats] = useState(defaultStats);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    axios
-      .get('/api/stats/summary')
-      .then((res) => {
-        setStats(res.data);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    let cancelled = false;
+
+    const fetchStats = async ({ silent = false } = {}) => {
+      try {
+        if (!silent) {
+          setLoading(true);
+        }
+        const res = await axios.get('/api/stats/summary');
+        if (!cancelled) {
+          setStats({ ...defaultStats, ...(res.data || {}) });
+        }
+      } catch {
+        if (!cancelled) {
+          setStats(defaultStats);
+        }
+      } finally {
+        if (!silent && !cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchStats();
+
+    const handleRefresh = () => fetchStats({ silent: true });
+    window.addEventListener(DASHBOARD_REFRESH_EVENT, handleRefresh);
+    const timer = window.setInterval(handleRefresh, 5000);
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener(DASHBOARD_REFRESH_EVENT, handleRefresh);
+      window.clearInterval(timer);
+    };
   }, []);
 
   const chartData = {
-    labels: ['Total Scans', 'Malware Hits', 'Vulnerability Reports', 'Fraud Flags'],
+    labels: ['Total Activity', 'Malware Hits', 'Vulnerability Reports', 'Job Scam Checks'],
     datasets: [
       {
         label: 'Events',
-        data: [stats.total_scans, stats.malware_detected, stats.vulnerability_reports, stats.fraud_detected],
+        data: [stats.total_activity, stats.malware_detected, stats.vulnerability_reports, stats.job_scam_checks],
         backgroundColor: ['#6d8fe5', '#ef7d7d', '#e6b46b', '#74c8bf'],
         borderRadius: 12,
       },
@@ -76,8 +107,8 @@ function Dashboard() {
 
       <section className="dashboard-metric-grid">
         <div className="dashboard-metric-card">
-          <span>Total Scans</span>
-          <strong>{stats.total_scans}</strong>
+          <span>Total Activity</span>
+          <strong>{stats.total_activity}</strong>
         </div>
         <div className="dashboard-metric-card">
           <span>Malware Hits</span>
@@ -88,8 +119,8 @@ function Dashboard() {
           <strong>{stats.vulnerability_reports}</strong>
         </div>
         <div className="dashboard-metric-card">
-          <span>Fraud Flags</span>
-          <strong>{stats.fraud_detected}</strong>
+          <span>Job Scam Checks</span>
+          <strong>{stats.job_scam_checks}</strong>
         </div>
       </section>
 

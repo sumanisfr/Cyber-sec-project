@@ -15,6 +15,7 @@ def summary():
     if tenant_id:
         scans = execute('SELECT COUNT(*) as cnt FROM malware_scans WHERE tenant_id = %s', (tenant_id,), fetchone=True)
         vuln_reports = execute('SELECT COUNT(*) as cnt FROM vuln_reports WHERE tenant_id = %s', (tenant_id,), fetchone=True)
+        job_scam_checks = execute('SELECT COUNT(*) as cnt FROM job_scam_checks WHERE tenant_id = %s', (tenant_id,), fetchone=True)
         malware = execute(
             'SELECT COUNT(*) as cnt FROM malware_scans WHERE tenant_id = %s AND status = %s',
             (tenant_id, 'MALICIOUS'),
@@ -28,6 +29,7 @@ def summary():
     else:
         scans = execute('SELECT COUNT(*) as cnt FROM malware_scans', fetchone=True)
         vuln_reports = execute('SELECT COUNT(*) as cnt FROM vuln_reports', fetchone=True)
+        job_scam_checks = execute('SELECT COUNT(*) as cnt FROM job_scam_checks', fetchone=True)
         malware = execute(
             'SELECT COUNT(*) as cnt FROM malware_scans WHERE status = %s',
             ('MALICIOUS',),
@@ -38,9 +40,19 @@ def summary():
             fetchone=True,
         )
 
+    total_activity = 0
+    if scans and 'cnt' in scans:
+        total_activity += scans['cnt']
+    if vuln_reports and 'cnt' in vuln_reports:
+        total_activity += vuln_reports['cnt']
+    if job_scam_checks and 'cnt' in job_scam_checks:
+        total_activity += job_scam_checks['cnt']
+
     return jsonify({
-        'total_scans': scans['cnt'] if scans and 'cnt' in scans else 0,
+        'total_scans': total_activity,
+        'total_activity': total_activity,
         'malware_detected': malware['cnt'] if malware and 'cnt' in malware else 0,
         'vulnerability_reports': vuln_reports['cnt'] if vuln_reports and 'cnt' in vuln_reports else 0,
+        'job_scam_checks': job_scam_checks['cnt'] if job_scam_checks and 'cnt' in job_scam_checks else 0,
         'fraud_detected': fraud_detected['cnt'] if fraud_detected and 'cnt' in fraud_detected else 0,
     })

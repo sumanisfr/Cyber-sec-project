@@ -39,3 +39,14 @@ CREATE TABLE IF NOT EXISTS vuln_reports (
     report JSONB,
     scanned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS job_scam_checks (
+    id SERIAL PRIMARY KEY,
+    tenant_id VARCHAR(64) NOT NULL DEFAULT 'default',
+    username VARCHAR(150),
+    title TEXT,
+    content TEXT,
+    score INTEGER,
+    risk_level VARCHAR(20),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

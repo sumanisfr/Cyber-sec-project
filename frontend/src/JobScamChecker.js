@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from './api';
+import { notifyDashboardRefresh } from './dashboardEvents';
 
 function JobScamChecker() {
   const [title, setTitle] = useState('');
@@ -27,6 +28,7 @@ function JobScamChecker() {
     try {
       const response = await axios.post('/api/job-scam/check', { title, content });
       setResult(response.data);
+      notifyDashboardRefresh();
     } catch (err) {
       setError(err.response?.data?.error || 'Unable to analyze this job post right now.');
     } finally {
